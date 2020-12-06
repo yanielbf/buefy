@@ -15,7 +15,7 @@
             'is-hovered': hovered,
             'is-selected': selected
         }]"
-        v-on="$listeners"
+        v-on="$attrs"
     >
         <b-icon
             v-if="iconLeft"
@@ -36,11 +36,13 @@
     </component>
 </template>
 
-<script>
-import Icon from '../icon/Icon'
+<script lang="ts">
+import { defineComponent } from 'vue'
+
+import Icon from '../icon/Icon.vue'
 import config from '../../utils/config'
 
-export default {
+export default defineComponent({
     name: 'BButton',
     components: {
         [Icon.name]: Icon
@@ -70,7 +72,7 @@ export default {
         nativeType: {
             type: String,
             default: 'button',
-            validator: (value) => {
+            validator: (value: string) => {
                 return [
                     'button',
                     'submit',
@@ -81,7 +83,7 @@ export default {
         tag: {
             type: String,
             default: 'button',
-            validator: (value) => {
+            validator: (value: string) => {
                 return config.defaultLinkTags.indexOf(value) >= 0
             }
         }
@@ -102,5 +104,5 @@ export default {
             return this.size
         }
     }
-}
+})
 </script>

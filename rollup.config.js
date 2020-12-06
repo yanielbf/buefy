@@ -1,44 +1,36 @@
 import vue from 'rollup-plugin-vue'
-import node from 'rollup-plugin-node-resolve'
-import cjs from 'rollup-plugin-commonjs'
-import babel from 'rollup-plugin-babel'
+import node from '@rollup/plugin-node-resolve'
+import cjs from '@rollup/plugin-commonjs'
+import babel from '@rollup/plugin-babel'
 import { terser } from 'rollup-plugin-terser'
+import typescript from 'rollup-plugin-typescript2'
 
 import fs from 'fs'
 import path from 'path'
 
 import pack from './package.json'
 
-const babelConfig = {
-    exclude: 'node_modules/**',
-    runtimeHelpers: true,
-    babelrc: false,
-    presets: [['@babel/preset-env', { modules: false }]]
-}
-
 const bannerTxt = `/*! Buefy v${pack.version} | MIT License | github.com/buefy/buefy */`
 
-const baseFolder = './src/'
-const componentsFolder = 'components/'
+const baseFolder = './src/components/'
 
 const components = fs
-    .readdirSync(baseFolder + componentsFolder)
+    .readdirSync(baseFolder)
     .filter((f) =>
-        fs.statSync(path.join(baseFolder + componentsFolder, f)).isDirectory()
+        fs.statSync(path.join(baseFolder, f)).isDirectory()
     )
 
 const entries = {
-    'index': './src/index.js',
-    'helpers': './src/utils/helpers.js',
+    'index': './src/index.ts',
+    'helpers': './src/utils/helpers.ts',
     ...components.reduce((obj, name) => {
-        obj[name] = (baseFolder + componentsFolder + name)
+        obj[name] = (baseFolder + name)
         return obj
     }, {})
 }
 
-const capitalize = (s) => {
-    if (typeof s !== 'string') return ''
-    return s.charAt(0).toUpperCase() + s.slice(1)
+const babelOptions = {
+    babelHelpers: 'bundled'
 }
 
 const vuePluginConfig = {
@@ -50,34 +42,12 @@ const vuePluginConfig = {
     }
 }
 
-export default () => {
-    const mapComponent = (name) => {
-        return [
-            {
-                input: baseFolder + componentsFolder + `${name}/index.js`,
-                external: ['vue'],
-                output: {
-                    format: 'umd',
-                    name: capitalize(name),
-                    file: `dist/components/${name}/index.js`,
-                    banner: bannerTxt,
-                    exports: 'named',
-                    globals: {
-                        vue: 'Vue'
-                    }
-                },
-                plugins: [
-                    node({
-                        extensions: ['.vue', '.js']
-                    }),
-                    cjs(),
-                    vue(vuePluginConfig),
-                    babel(babelConfig)
-                ]
-            }
-        ]
-    }
+const capitalize = (s) => {
+    if (typeof s !== 'string') return ''
+    return s.charAt(0).toUpperCase() + s.slice(1)
+}
 
+export default () => {
     let config = [
         {
             input: entries,
@@ -88,10 +58,13 @@ export default () => {
             },
             plugins: [
                 node({
-                    extensions: ['.vue', '.js']
+                    extensions: ['.vue', '.ts']
+                }),
+                typescript({
+                    typescript: require('typescript')
                 }),
                 vue(vuePluginConfig),
-                babel(babelConfig),
+                babel(babelOptions),
                 cjs()
             ]
         },
@@ -105,15 +78,18 @@ export default () => {
             },
             plugins: [
                 node({
-                    extensions: ['.vue', '.js']
+                    extensions: ['.vue', '.ts']
+                }),
+                typescript({
+                    typescript: require('typescript')
                 }),
                 vue(vuePluginConfig),
-                babel(babelConfig),
+                babel(babelOptions),
                 cjs()
             ]
         },
         {
-            input: 'src/index.js',
+            input: 'src/index.ts',
             external: ['vue'],
             output: {
                 format: 'umd',
@@ -127,15 +103,18 @@ export default () => {
             },
             plugins: [
                 node({
-                    extensions: ['.vue', '.js']
+                    extensions: ['.vue', '.ts']
+                }),
+                typescript({
+                    typescript: require('typescript')
                 }),
                 vue(vuePluginConfig),
-                babel(babelConfig),
+                babel(babelOptions),
                 cjs()
             ]
         },
         {
-            input: 'src/index.js',
+            input: 'src/index.ts',
             external: ['vue'],
             output: {
                 format: 'esm',
@@ -144,15 +123,16 @@ export default () => {
             },
             plugins: [
                 node({
-                    extensions: ['.vue', '.js']
+                    extensions: ['.vue', '.ts']
+                }),
+                typescript({
+                    typescript: require('typescript')
                 }),
                 vue(vuePluginConfig),
-                babel(babelConfig),
+                babel(babelOptions),
                 cjs()
             ]
-        },
-        // individual components
-        ...components.map((f) => mapComponent(f)).reduce((r, a) => r.concat(a), [])
+        }
     ]
 
     if (process.env.MINIFY === 'true') {
